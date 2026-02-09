@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRC-Sport | Pro 3D Hub</title>
+    <!-- THREE.JS Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;500;700&display=swap');
+
+        :root {
+            --accent: #e7ff00;
+            --glass: rgba(5, 15, 5, 0.9);
+            --border: rgba(231, 255, 0, 0.4);
+            --live-red: #ff3131;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: white;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+        }
+
+        .overlay {
+            position: relative;
+            z-index: 10;
+            padding: 15px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header { text-align: center; padding: 20px 0; }
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--accent);
+            text-shadow: 0 0 20px rgba(231, 255, 0, 0.6);
+            margin: 0;
+            letter-spacing: 2px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-bottom: 40px;
+        }
+
+        /* SEARCH BAR */
+        .search-box { display: flex; gap: 8px; }
+        .search-input {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            outline: none;
+        }
+        .search-btn {
+            background: var(--accent);
+            border: none;
+            padding: 0 15px;
+            border-radius: 10px;
+            font-family: 'Orbitron';
+            font-weight: 900;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+
+        /* LIVE BUTTON */
+        .watch-live-btn {
+            background: var(--live-red);
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px;
+            border-radius: 12px;
+            font-family: 'Orbitron';
+            font-weight: 900;
+            box-shadow: 0 0 15px rgba(255, 49, 49, 0.5);
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .section-title {
+            font-family: 'Orbitron';
+            font-size: 0.7rem;
+            color: var(--accent);
+            margin-top: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 15px;
+        }
+
+        .match-item {
+            display: grid;
+            grid-template-columns: 1fr 60px 1fr;
+            align-items: center;
+            text-align: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .team { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.75rem; }
+        .crest { width: 28px; height: 28px; object-fit: contain; }
+        .score-time { font-family: 'Orbitron'; font-size: 0.8rem; color: var(--accent); }
+        
+        .loading { font-family: 'Orbitron'; font-size: 0.6rem; text-align: center; padding: 20px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="overlay">
+        <header><h1 class="logo">TRC-SPORT</h1></header>
+
+        <div class="container">
+            <div class="search-box">
+                <input type="text" id="teamInput" class="search-input" placeholder="Search team...">
+                <button class="search-btn" onclick="searchTeam()">FIND</button>
+            </div>
+
+            <a href="https://www.livescore.com" target="_blank" class="watch-live-btn">WATCH LIVE STREAMS</a>
+
+            <div id="search-results-box" style="display:none;">
+                <div class="section-title">Search Results</div>
+                <div class="glass-card" id="search-list"></div>
+            </div>
+
+            <div class="section-title">Live & Today</div>
+            <div class="glass-card" id="live-list"><div class="loading">SYNCING FIELD DATA...</div></div>
+
+            <div class="section-title">Tomorrow's Schedule</div>
+            <div class="glass-card" id="tom-list"><div class="loading">LOADING FIXTURES...</div></div>
+
+            <div class="section-title">PL Top 5</div>
+            <div class="glass-card" id="standings-list"><div class="loading">FETCHING RANKS...</div></div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = '1454704e7dc6422b9e9f790c8ed655df';
+
+        async function loadData() {
+            try {
+                // Standing
+                const s = await fetch('https://api.football-data.org/v4/competitions/PL/standings', {headers:{'X-Auth-Token': API_KEY}});
+                const sd = await s.json();
+                document.getElementById('standings-list').innerHTML = sd.standings[0].table.slice(0,5).map(t => 
+                    `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <span>${t.position}. <img src="${t.team.crest}" style="width:15px"> ${t.team.shortName}</span>
+                        <span style="color:var(--accent); font-family:Orbitron;">${t.points}P</span>
+                    </div>`).join('');
+
+                // Matches
+                const m = await fetch('https://api.football-data.org/v4/matches', {headers:{'X-Auth-Token': API_KEY}});
+                const md = await m.json();
+                document.getElementById('live-list').innerHTML = md.matches.slice(0,6).map(x => `
+                    <div class="match-item">
+                        <div class="team"><img src="${x.homeTeam.crest}" class="crest"><span>${x.homeTeam.shortName}</span></div>
+                        <div class="score-time">${x.score.fullTime.home??0}-${x.score.fullTime.away??0}</div>
+                        <div class="team"><img src="${x.awayTeam.crest}" class="crest"><span>${x.awayTeam.shortName}</span></div>
+                    </div>`).join('');
+            } catch(e) {}
+        }
+
+        async function searchTeam() {
+            const q = document.getElementById('teamInput').value.toLowerCase();
+            const res = await fetch('https://api.football-data.org/v4/matches', {headers:{'X-Auth-Token': API_KEY}});
+            const d = await res.json();
+            const filtered = d.matches.filter(m => m.homeTeam.name.toLowerCase().includes(q) || m.awayTeam.name.toLowerCase().includes(q));
+            document.getElementById('search-results-box').style.display = 'block';
+            document.getElementById('search-list').innerHTML = filtered.map(x => `
+                <div class="match-item">
+                    <div class="team"><img src="${x.homeTeam.crest}" class="crest"><span>${x.homeTeam.shortName}</span></div>
+                    <div class="score-time">SCORE<br>${x.score.fullTime.home??0}-${x.score.fullTime.away??0}</div>
+                    <div class="team"><img src="${x.awayTeam.crest}" class="crest"><span>${x.awayTeam.shortName}</span></div>
+                </div>`).join('');
+        }
+
+        // --- ENHANCED 3D REALISTIC PITCH ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Realistic Grass Texture (Stripes)
+        const pitchGroup = new THREE.Group();
+        for(let i = -10; i < 10; i++) {
+            const stripeGeom = new THREE.PlaneGeometry(100, 5);
+            const stripeMat = new THREE.MeshPhongMaterial({ 
+                color: i % 2 === 0 ? 0x1a3a1a : 0x224422,
+                side: THREE.DoubleSide 
+            });
+            const stripe = new THREE.Mesh(stripeGeom, stripeMat);
+            stripe.position.y = i * 5;
+            pitchGroup.add(stripe);
+        }
+        pitchGroup.rotation.x = -Math.PI / 2;
+        scene.add(pitchGroup);
+
+        // Lines
+        const grid = new THREE.GridHelper(100, 20, 0xffffff, 0x111111);
+        grid.rotation.x = -Math.PI / 2;
+        grid.position.z = 0.01;
+        pitchGroup.add(grid);
+
+        // Stadium Lighting
+        const light1 = new THREE.SpotLight(0xffffff, 1);
+        light1.position.set(0, 30, 20);
+        scene.add(light1);
+        scene.add(new THREE.AmbientLight(0x404040, 0.5));
+
+        camera.position.set(0, 10, 25);
+        camera.lookAt(0, 0, 0);
+
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.005;
+            
+            // Moving Camera Animation
+            camera.position.x = Math.sin(time) * 5;
+            camera.position.z = 25 + Math.cos(time) * 2;
+            camera.lookAt(0, 0, 0);
+
+            // Subtle pitch movement
+            pitchGroup.position.z = Math.sin(time*0.5) * 2;
+            
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+        loadData();
+    </script>
+</body>
+</html>
