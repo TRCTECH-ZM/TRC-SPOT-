@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRC FIX Security 3D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #020617;
+            --primary: #38BDF8;
+            --secondary: #1E293B;
+            --glass: rgba(15, 23, 42, 0.9);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-deep);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* Moving 3D Grid Background */
+        .bg-3d {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%);
+            z-index: -1;
+        }
+
+        .grid-3d {
+            position: absolute;
+            width: 200%; height: 200%; top: -50%; left: -50%;
+            background-image: linear-gradient(var(--primary) 1px, transparent 1px), linear-gradient(90deg, var(--primary) 1px, transparent 1px);
+            background-size: 60px 60px;
+            opacity: 0.15;
+            transform: rotateX(60deg);
+            animation: moveGrid 15s linear infinite;
+        }
+
+        @keyframes moveGrid {
+            from { transform: rotateX(60deg) translateY(0); }
+            to { transform: rotateX(60deg) translateY(60px); }
+        }
+
+        /* 3D App Card */
+        .app-card {
+            width: 90%;
+            max-width: 380px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 25px;
+            padding: 35px 25px;
+            text-align: center;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+        }
+
+        .header { transform: translateZ(60px); margin-bottom: 25px; }
+
+        .avatar-3d {
+            width: 90px; height: 90px;
+            margin: 0 auto 15px;
+            background: var(--primary);
+            border-radius: 20%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 15px 35px rgba(56, 189, 248, 0.4);
+            transform: rotateY(10deg) translateZ(20px);
+        }
+
+        .app-name { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 22px; 
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        /* 3D Interactive Buttons */
+        .btn-list { transform: translateZ(40px); display: flex; flex-direction: column; gap: 14px; }
+
+        .btn-3d {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 800;
+            text-decoration: none;
+            border-bottom: 5px solid #0284c7;
+            transition: 0.1s;
+            cursor: pointer;
+        }
+
+        .btn-3d:active { transform: translateY(4px); border-bottom-width: 1px; }
+
+        .btn-dark { background: #111827; color: white; border: 1px solid var(--primary); border-bottom: 5px solid #000; }
+
+        .promo-3d {
+            margin-top: 25px;
+            background: rgba(56, 189, 248, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            transform: translateZ(20px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        /* Scanner Layer */
+        #scanner {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.98); z-index: 9999;
+            flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        .scan-bar {
+            width: 70%; height: 4px; background: var(--primary);
+            box-shadow: 0 0 30px var(--primary); animation: scanLoop 1.5s infinite;
+        }
+
+        @keyframes scanLoop { 0% { opacity: 0.2; transform: translateY(-50px); } 50% { opacity: 1; } 100% { opacity: 0.2; transform: translateY(50px); } }
+
+        /* Modal Overlay */
+        .modal {
+            display: none; position: fixed; top: 50%; left: 50%; width: 85%;
+            transform: translate(-50%, -50%); background: #1e293b;
+            padding: 25px; border-radius: 20px; border: 2px solid var(--primary);
+            z-index: 10000; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-3d"><div class="grid-3d"></div></div>
+
+    <div class="app-card" id="card">
+        <div class="header">
+            <div class="avatar-3d">
+                <svg width="50" height="50" viewBox="0 0 24 24" fill="white"><path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            </div>
+            <h1 class="app-name">TRC FIX SECURITY</h1>
+        </div>
+
+        <div class="btn-list">
+            <button class="btn-3d" onclick="runRealScan()">⚡ START VIRUS SCAN</button>
+            <a href="https://wa.me/260763926311?text=Hi%20TRC%20FIX,%20I%20need%20account%20recovery%20help." class="btn-3d">🔓 RECOVER ACCOUNT</a>
+            <button class="btn-3d btn-dark" onclick="pop('🛡️ ANTI-HACK', 'Protection Active.\\n\\nAlways update your apps to stay safe.')">ANTI-HACKING</button>
+            <button class="btn-3d btn-dark" onclick="pop('🔍 APP CHECK', 'Scanning permissions...\\n\\nAll apps are within safe limits.')">SECURITY CHECK</button>
+        </div>
+
+        <div class="promo-3d">
+            <p>🎁 <strong>OFFER:</strong> Next 3 users to comment win <strong>3GB DATA!</strong><br>Valid until 4th March.</p>
+        </div>
+    </div>
+
+    <!-- Real Scanner UI -->
+    <div id="scanner">
+        <div class="scan-bar"></div>
+        <p id="statusTxt" style="margin-top:20px; font-family:Orbitron; letter-spacing:2px">ANALYZING CORE...</p>
+    </div>
+
+    <!-- Popup -->
+    <div id="modal" class="modal">
+        <h2 id="m-title" style="color:var(--primary); margin-bottom:15px"></h2>
+        <p id="m-text" style="white-space:pre-line; margin-bottom:20px"></p>
+        <button class="btn-3d" style="width:100%" onclick="closePop()">CONFIRM</button>
+    </div>
+
+    <script>
+        const card = document.getElementById('card');
+        
+        // 3D Tilt responsiveness
+        document.addEventListener('mousemove', (e) => {
+            let x = (window.innerWidth / 2 - e.pageX) / 25;
+            let y = (window.innerHeight / 2 - e.pageY) / 25;
+            card.style.transform = `rotateY(${-x}deg) rotateX(${y}deg)`;
+        });
+
+        // Functional Scan Simulation
+        function runRealScan() {
+            const sc = document.getElementById('scanner');
+            const txt = document.getElementById('statusTxt');
+            sc.style.display = 'flex';
+            
+            setTimeout(() => txt.innerText = "CHECKING MALWARE...", 1000);
+            setTimeout(() => txt.innerText = "OPTIMIZING SYSTEM...", 2000);
+            
+            setTimeout(() => {
+                sc.style.display = 'none';
+                pop('System Clean', '✅ Scan successfully finished.\\nYour device is protected by TRC FIX.');
+            }, 3500);
+        }
+
+        function pop(title, msg) {
+            document.getElementById('m-title').innerText = title;
+            document.getElementById('m-text').innerText = msg;
+            document.getElementById('modal').style.display = 'block';
+        }
+
+        function closePop() {
+            document.getElementById('modal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
